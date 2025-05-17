@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>心臟病小遊戲 v3.5.4</title>
+    <style>
+        /* --- 基本樣式 (桌面優先) --- */
+        html, body { height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #0a4b3f; color: white; }
+        body { margin: 0; min-height: 100vh; padding: 0.5rem; box-sizing: border-box; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        #setupPage { display: flex; flex-direction: column; align-items: center; width: 90%; max-width: 450px; background-color: rgba(0, 0, 0, 0.3); padding: clamp(1.8rem, 6vw, 3rem); border-radius: 15px; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.5); margin-top: 1rem; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .setup-title { font-size: clamp(2.4rem, 10vw, 4rem); font-weight: bold; color: #A0522D; margin-bottom: clamp(1.8rem, 6vh, 3rem); text-align: center; width: 100%; text-shadow: 0 0 8px gold, 1px 1px 3px rgba(0,0,0,0.5); }
+        .version-number { font-size: 0.6em; color: #ccc; font-weight: normal; vertical-align: middle; margin-left: 0.5em; text-shadow: none; }
+        .input-group { margin-bottom: 1.2rem; text-align: left; width: 100%; }
+        .input-group label { display: block; margin-bottom: 0.4rem; font-weight: bold; color: #fbbf24; font-size: clamp(1rem, 3.5vw, 1.3rem); text-shadow: 1px 1px 1px rgba(0,0,0,0.3); }
+        input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; padding: clamp(0.8rem, 2.5vw, 1.1rem); font-size: clamp(1rem, 4vw, 1.3rem); margin-top: 0.25rem; border-radius: 0.5rem; border: 1px solid #9ca3af; background-color: #e2e8f0; color: #1f2937; box-shadow: inset 0 1px 4px rgba(0,0,0,0.2); transition: box-shadow 0.2s ease; }
+        input[type="text"]:focus, input[type="number"]:focus { box-shadow: inset 0 1px 4px rgba(0,0,0,0.3), 0 0 8px rgba(59, 130, 246, 0.5); outline: none; }
+        #setupPage button { width: 100%; padding: clamp(0.8rem, 3.5vh, 1.2rem); font-size: clamp(1.1rem, 5vw, 1.5rem); margin-top: 1.5rem; border-radius: 0.5rem; border: 1px solid #10753a; color: white; font-weight: bold; cursor: pointer; background: linear-gradient(to bottom, #1acf64, #16a34a); text-shadow: 0 1px 1px rgba(0,0,0,0.4); box-shadow: inset 0 -2px 3px rgba(0,0,0,0.3), 0 2px 3px rgba(0,0,0,0.5); transition: background 0.2s ease; }
+        #setupPage button:hover { background: linear-gradient(to bottom, #17bd5b, #138a40); }
+        #gamePage { display: none; position: relative; width: 100%; height: 100%; overflow: hidden; }
+        #gamePage h1 { font-size: clamp(2rem, 10vw, 3rem); /* Base title size */ margin-bottom: 0.5rem; color: #fbbf24; position: absolute; top: 1%; left: 50%; transform: translateX(-50%); width: 95%; text-align: center; z-index: 20; text-shadow: 1px 1px 0px #a0522d, 2px 2px 3px rgba(0,0,0,0.4), 0 0 5px rgba(251, 191, 36, 0.5); }
+        .card { /* Base card size */ width: clamp(300px, 50vw, 400px); height: clamp(410px, 70vw, 550px); /* Base size adjusted slightly */ background: linear-gradient(to bottom, #ffffff, #f7f7f7); border-radius: 15px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(0,0,0,0.1); border: 1px solid #bbb; z-index: 1; overflow: hidden; color: black; }
+        .card-corner { position: absolute; line-height: 1; text-align: center; font-size: clamp(3rem, 10.5vw, 5.25rem); font-weight: bold; color: inherit; z-index: 2; width: auto; padding: 0.2em; text-shadow: 1px 1px 1px rgba(0,0,0,0.2); }
+        .card-corner.top-left { top: 0.8rem; left: 0.8rem; transform: rotate(180deg); } .card-corner.bottom-right { bottom: 0.8rem; right: 0.8rem; }
+        .card-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: clamp(6rem, 30vw, 10rem); opacity: 0.9; color: inherit; z-index: 1; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.4)); }
+        .suit-red { color: #D80000 !important; } .suit-black { color: #000000 !important; }
+        .button-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+        .game-btn { /* Base button style */ position: absolute; width: clamp(110px, 22vw, 150px); height: clamp(110px, 22vw, 150px); /* Slightly larger base */ border-radius: 50%; border: clamp(4px, 1.5vw, 7px) solid rgba(255, 255, 255, 0.5); border-top-color: rgba(255, 255, 255, 0.8); border-bottom-color: rgba(0, 0, 0, 0.2); background: linear-gradient(to bottom, #1ccc6a, #16a34a 60%, #107a3e); color: white; font-weight: bold; cursor: pointer; z-index: 10; transition: background 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: clamp(0.9rem, 2.8vw, 1.2rem); /* Slightly larger base font */ text-align: center; line-height: 1.2; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 5px rgba(0, 0, 0, 0.5); pointer-events: auto; }
+        .game-btn:hover { background: linear-gradient(to bottom, #1ad670, #18b052 60%, #118844); box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.6); }
+        /* Base positions & rotation (for desktop > 1024px) - JS 設定 top/left, CSS 設定 transform */
+        #player-btn-0 { transform: translate(-50%, -50%) rotate(180deg); }
+        #player-btn-1 { transform: translate(-50%, -50%) rotate(0deg); }
+        #player-btn-2 { transform: translate(-50%, -50%) rotate(180deg); }
+        #player-btn-3 { transform: translate(-50%, -50%) rotate(0deg); }
+        .game-info { /* Base info style */ position: absolute; top: 50%; transform: translateY(-50%); font-size: clamp(1rem, 3.5vw, 1.4rem); color: #eee; background: linear-gradient(to bottom, #4a5568, #2d3748); padding: 0.6rem 1rem; border-radius: 8px; z-index: 15; border: 1px solid #637085; border-top-color: #8190a5; text-shadow: 0 1px 1px rgba(0,0,0,0.5); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.4); white-space: nowrap; }
+        .game-info.left { left: 2%; } .game-info.right { right: 2%; }
+        .game-info span { color: #fbbf24; font-weight: bold; margin-left: 0.3em; }
+        #restartBtn { position: absolute; bottom: 2%; left: 50%; transform: translateX(-50%); width: auto; padding: clamp(0.6rem, 2.5vh, 0.9rem) clamp(1.5rem, 6vw, 2.5rem); background: linear-gradient(to bottom, #8c9fb1, #546a7f); border: 1px solid #425567; border-top-color: #a0b3c7; border-radius: 8px; z-index: 5; font-size: clamp(1rem, 4vw, 1.3rem); color: #fff; font-weight: bold; text-shadow: 0 1px 1px rgba(0,0,0,0.5); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 3px 5px rgba(0,0,0,0.5); transition: background 0.2s ease; cursor: pointer; }
+        #restartBtn:hover { background: linear-gradient(to bottom, #798da0, #475a6d); }
+        .glow-gold { animation: glow-card-match 1s ease-out forwards; } @keyframes glow-card-match { 0% { box-shadow: 0 8px 25px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.1), 0 0 0px 0px gold, inset 0 0 0px rgba(255,215,0,0.5); } 50% { box-shadow: 0 8px 25px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.1), 0 0 25px 10px gold, inset 0 0 15px rgba(255,215,0,0.7); } 100% { box-shadow: 0 8px 25px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.1), 0 0 15px 5px gold, inset 0 0 10px rgba(255,215,0,0.6); } }
+        #countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 100; display: none; }
+        #countdown-number { font-size: clamp(10rem, 40vw, 20rem); color: #fff; font-weight: bold; animation: countdown-pulse 1s ease-out infinite; text-shadow: 0 0 15px rgba(255,255,255,0.5), 0 0 30px rgba(255,255,255,0.3); } @keyframes countdown-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
+        #pause-button { position: absolute; top: 1.5%; right: 2%; z-index: 50; padding: 0.5rem 1rem; font-size: clamp(0.9rem, 3vw, 1.1rem); background: linear-gradient(to bottom, #6b7280, #4b5563); border: 1px solid #374151; border-top-color: #9ca3af; color: white; border-radius: 6px; cursor: pointer; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 3px rgba(0,0,0,0.4); transition: background 0.2s ease; }
+        #pause-button:hover { background: linear-gradient(to bottom, #5a616e, #404853); }
+        #pause-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 90; display: none; }
+        .pause-box { background: linear-gradient(to bottom, #4a5568, #2d3748); padding: 2rem 3rem; border-radius: 15px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.2); border: 1px solid #637085; }
+        .pause-box h2 { margin-top: 0; margin-bottom: 1.5rem; font-size: clamp(1.8rem, 7vw, 2.5rem); color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.5); }
+        #resume-button { width: auto; padding: clamp(0.7rem, 3vh, 1rem) clamp(1.5rem, 6vw, 2.5rem); font-size: clamp(1.1rem, 4.5vw, 1.4rem); margin-top: 0.5rem; border-radius: 0.5rem; border: 1px solid #10753a; color: white; font-weight: bold; cursor: pointer; background: linear-gradient(to bottom, #1acf64, #16a34a); text-shadow: 0 1px 1px rgba(0,0,0,0.4); box-shadow: inset 0 -2px 3px rgba(0,0,0,0.3), 0 2px 3px rgba(0,0,0,0.5); transition: background 0.2s ease; }
+        #resume-button:hover { background: linear-gradient(to bottom, #17bd5b, #138a40); }
+        #win-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 500px; padding: clamp(1rem, 5vw, 3rem); background: linear-gradient(135deg, #fceabb, #f8b500, #fcc200, #e6a200); border: 4px solid #fff; border-radius: 20px; box-shadow: 0 10px 40px rgba(255, 230, 150, 0.5), 0 0 30px rgba(255, 215, 0, 0.7); text-align: center; z-index: 101; display: none; animation: win-appear 0.5s ease-out forwards; cursor: pointer; }
+        .win-text { font-size: clamp(1.5rem, 8vw, 3rem); color: #5d4037; font-weight: bold; text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.8), 2px 2px 3px rgba(0,0,0,0.3); } @keyframes win-appear { from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+        #bgm-controls { position: fixed; bottom: 10px; right: 10px; z-index: 200; opacity: 0.7; transition: opacity 0.3s ease; } #bgm-controls:hover { opacity: 1; } #bgm-button { padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: rgba(0, 0, 0, 0.5); color: white; border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 5px; cursor: pointer; } #bgm-button:hover { background-color: rgba(0, 0, 0, 0.7); }
+
+        /* --- Tablet Styles (601px - 1024px) --- */
+        @media (min-width: 601px) and (max-width: 1024px) {
+            #gamePage h1 { font-size: clamp(2.5rem, 10vw, 3.5rem); }
+            .card { width: clamp(380px, 50vw, 480px); height: clamp(520px, 70vw, 650px); }
+            .game-btn { width: clamp(150px, 25vw, 200px); height: clamp(150px, 25vw, 200px); font-size: clamp(1.1rem, 3.2vw, 1.4rem); border-width: clamp(5px, 1.8vw, 8px); }
+            #player-btn-0 { transform: translate(-50%, -50%) rotate(180deg); }
+            #player-btn-1 { transform: translate(-50%, -50%) rotate(0deg); }
+            #player-btn-2 { transform: translate(-50%, -50%) rotate(180deg); }
+            #player-btn-3 { transform: translate(-50%, -50%) rotate(0deg); }
+            .game-info { font-size: clamp(1.1rem, 3.8vw, 1.5rem); padding: 0.7rem 1.2rem; }
+            #restartBtn { font-size: clamp(1.1rem, 4.2vw, 1.4rem); padding: clamp(0.7rem, 2.8vh, 1rem) clamp(1.8rem, 6.5vw, 2.8rem); }
+        }
+
+        /* --- 手機 Styles (max-width: 600px) --- */
+        @media (max-width: 600px) {
+            .game-info { top: 12%; transform: translateY(0); }
+            .game-info.left { left: 5%; } .game-info.right { right: 5%; }
+            #restartBtn { bottom: 1%; } #pause-button { top: 1%; right: 5%;}
+            .game-btn { width: clamp(250px, 60vw, 300px); height: clamp(250px, 60vw, 300px); font-size: clamp(1.8rem, 6vw, 2.2rem); border-width: clamp(8px, 2.5vw, 12px); }
+            #player-btn-0 { transform: translate(-50%, -50%) rotate(180deg); }
+            #player-btn-1 { transform: translate(-50%, -50%) rotate(0deg); }
+            #player-btn-2 { transform: translate(-50%, -50%) rotate(180deg); }
+            #player-btn-3 { transform: translate(-50%, -50%) rotate(0deg); }
+            /* JS handles top/left for mobile */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setupPage">
+        <h2 class="setup-title">心臟病遊戲 <span class="version-number">v3.5.4</span></h2>
+        <div class="input-group"><label for="player1">玩家1 名稱</label><input type="text" id="player1" placeholder="玩家1 (左上)" value="Player 1" /></div>
+        <div class="input-group"><label for="player2">玩家2 名稱</label><input type="text" id="player2" placeholder="玩家2 (右下)" value="Player 2" /></div>
+        <div class="input-group"><label for="player3">玩家3 名稱</label><input type="text" id="player3" placeholder="玩家3 (右上)" /></div>
+        <div class="input-group"><label for="player4">玩家4 名稱</label><input type="text" id="player4" placeholder="玩家4 (左下)" /></div>
+        <div class="input-group"><label for="changeTime">換牌秒數 (2~8 秒)</label><input type="number" id="changeTime" min="2" max="8" value="3" /></div>
+        <div class="input-group"><label for="winScore">勝利分數</label><input type="number" id="winScore" value="5" /></div>
+        <button onclick="startGame()">開始遊戲</button>
+    </div>
+
+    <div id="gamePage">
+        <h1>心臟病遊戲 <span class="version-number">v3.5.4</span></h1>
+        <div id="card" class="card"></div>
+        <div class="button-container"></div>
+        <div id="target-number-display" class="game-info left">目標: <span>--</span></div>
+        <div id="current-card-display" class="game-info right">卡牌: <span>--</span></div>
+        <button id="restartBtn" onclick="restartGame()">重新開始</button>
+        <button id="pause-button">暫停</button>
+        <div id="pause-overlay"><div class="pause-box"><h2>遊戲暫停</h2><button id="resume-button">繼續遊戲</button></div></div>
+        <div id="win-banner" onclick="restartGame()"><div class="win-text"></div></div>
+        <div id="countdown-overlay"><div id="countdown-number">3</div></div>
+    </div>
+
+    <audio id="background-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        您的瀏覽器不支援 Audio 標籤。
+    </audio>
+    <div id="bgm-controls">
+        <button id="bgm-button" onclick="toggleBGM()">⏯️ BGM</button>
+    </div>
+
+    <script>
+    // ========================================
+    //  心臟病遊戲 JavaScript v3.5.4
+    // ========================================
+    // Author: Gemini (Generated Code)
+    // Date: 2025-04-20
+    // Changes in v3.5.4:
+    // - Fixed button positioning logic in startGame() for different screen sizes.
+    // - Refined tablet CSS styles.
+    // - Kept v3.5.3 JS logic otherwise (including debugging).
+    // ========================================
+
+    // --- 全域變數 ---
+    let players = [];
+    let playerElements = {};
+    let changeTime = 3;
+    let winScore = 5;
+    let currentCardValue = 0;
+    let targetNumber = 0;
+    let gameActive = false;
+    let scores = {};
+    let currentCardInterval;
+    let timeoutId;
+    let speech;
+    let availableVoices = [];
+    let showingResult = false;
+    let isPaused = false;
+    const GAME_VERSION = "v3.5.4";
+    let canSpeak = true;
+    let bgmAudio;
+    let bgmPlaying = false;
+    let countdownSpeechTimeout;
+
+    // --- 語音合成相關函數 ---
+    function getSpeechSynthesis() {
+        try {
+            if ('speechSynthesis' in window) {
+                if (!speech) {
+                    speech = window.speechSynthesis;
+                    console.log("[Speech] Init.");
+                    loadVoices();
+                    if (speech.onvoiceschanged !== undefined) {
+                        speech.onvoiceschanged = loadVoices;
+                        console.log("[Speech] Listener added.");
+                    }
+                }
+                return speech;
+            } else {
+                console.warn("[Speech] Not supported.");
+                return null;
+            }
+        } catch (e) {
+            console.error("[Speech] Error:", e);
+            alert("無法初始化語音");
+            return null;
+        }
+    }
+
+    function loadVoices() {
+        const synth = getSpeechSynthesis();
+        if (synth) {
+            availableVoices = synth.getVoices();
+            if (availableVoices.length > 0) {
+                console.log(`[Speech] ${availableVoices.length} voices.`);
+            } else {
+                console.warn("[Speech] No voices yet.");
+            }
+        }
+     }
+
+    function speakMessageInternal(synth, text) {
+        try {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'zh-TW';
+            msg.rate = 1.1;
+            msg.volume = 1;
+            msg.pitch = 1;
+            let desiredVoice = null;
+            const femaleKeywords = ['Female', '女', '美佳', '曉涵', '曉曉'];
+            if (availableVoices.length > 0) {
+                desiredVoice = availableVoices.find(v => v.lang === 'zh-TW' && femaleKeywords.some(k => v.name.includes(k)));
+                if (!desiredVoice) {
+                    desiredVoice = availableVoices.find(v => v.lang.startsWith('zh-') && femaleKeywords.some(k => v.name.includes(k)));
+                }
+                if (!desiredVoice) {
+                    desiredVoice = availableVoices.find(v => v.lang === 'zh-TW' && (v.name.includes('台灣') || v.name.includes('Taiwan') || v.name.includes('Google 普通话')));
+                }
+                if (!desiredVoice) {
+                    desiredVoice = availableVoices.find(v => v.lang === 'zh-TW');
+                }
+                if (!desiredVoice) {
+                    desiredVoice = availableVoices.find(v => v.lang.startsWith('zh-'));
+                }
+            }
+            if (desiredVoice) {
+                msg.voice = desiredVoice;
+                console.log(`[Speech] Using: ${desiredVoice.name} ${femaleKeywords.some(k => desiredVoice.name.includes(k)) ? '(Female Pref)' : ''}`);
+            } else {
+                 console.warn(`[Speech] Female voice not found. Using default.`);
+            }
+            msg.onend = () => {
+                console.log(`[Speech] End: "${text}"`);
+                setTimeout(() => {
+                    canSpeak = true;
+                }, 100);
+            };
+            msg.onerror = (e) => {
+                console.error(`[Speech] Error: ${e.error}`);
+                canSpeak = true;
+            };
+            console.log(`[Speech] Calling speak() for: "${text}"`);
+            synth.speak(msg);
+        } catch (err) {
+            console.error("[Speech] Utterance Error:", err);
+            canSpeak = true;
+        }
+     }
+
+    function speakMessage(text) {
+        console.log(`[SpeakMessage] Request: "${text}"`);
+        const synth = getSpeechSynthesis();
+        if (!synth) {
+            console.warn("[SpeakMessage] Synth unavailable.");
+            return;
+        }
+        clearTimeout(countdownSpeechTimeout);
+        if (!canSpeak) {
+            console.log(`[SpeakMessage] Throttled.`);
+            return;
+        }
+        try {
+            if (synth.speaking || synth.pending) {
+                 console.warn(`[SpeakMessage] Busy. Cancelling.`);
+                 synth.cancel();
+                 canSpeak = true;
+                 countdownSpeechTimeout = setTimeout(() => {
+                    console.log(`[SpeakMessage] Retrying: "${text}"`);
+                    speakMessage(text);
+                 }, 150);
+                 return;
+            }
+        } catch(e) {
+            console.error("[SpeakMessage] Cancel Error:", e);
+            canSpeak = true;
+        }
+        canSpeak = false;
+        speakMessageInternal(synth, text);
+     }
+
+    // --- 遊戲邏輯函數 ---
+
+    function startGame() {
+        console.log("--- startGame called (v3.5.4) ---");
+        try {
+            // Step 1: Init state
+            console.log("Step 1: Init state...");
+            speech = getSpeechSynthesis();
+            loadVoices();
+            canSpeak = true;
+            isPaused = false;
+            showingResult = false;
+            console.log("Step 1: Done.");
+
+            // Step 2: Hide overlays
+            console.log("Step 2: Hide overlays...");
+            const pauseOverlay = document.getElementById('pause-overlay');
+            if (pauseOverlay) {
+                 pauseOverlay.style.display='none';
+            }
+            const winBanner = document.getElementById('win-banner');
+            if (winBanner) {
+                 winBanner.style.display='none';
+            }
+            console.log("Step 2: Done.");
+
+            // Step 3: Read inputs
+            console.log("Step 3: Read inputs...");
+            players = [
+                document.getElementById("player1").value.trim(),
+                document.getElementById("player2").value.trim(),
+                document.getElementById("player3").value.trim(),
+                document.getElementById("player4").value.trim()
+            ];
+            changeTime = parseInt(document.getElementById("changeTime").value) || 3;
+            winScore = parseInt(document.getElementById("winScore").value) || 5;
+            console.log(`Step 3: Players=${players.filter(n=>n).length}, Time=${changeTime}, Score=${winScore}.`);
+
+            // Step 4: Validate players
+            console.log("Step 4: Validate players...");
+            let activePlayers = players.map((name, index) => ({ name, originalIndex: index })).filter(p => p.name !== "");
+            if (activePlayers.length < 2) {
+                alert("至少需要輸入兩位有效的玩家名稱！");
+                console.error("Validation Failed: Not enough players.");
+                return;
+            }
+            console.log(`Step 4: Valid players = ${activePlayers.length}.`);
+
+            // Step 5: Reset state
+            console.log("Step 5: Reset state...");
+            scores = {};
+            playerElements = {};
+            activePlayers.forEach(p => {
+                scores[p.originalIndex] = 0;
+            });
+            console.log("Step 5: Done.");
+
+            // Step 6: Switch pages
+            console.log("Step 6: Switch pages...");
+            const setupPageEl = document.getElementById("setupPage");
+            if (setupPageEl) {
+                setupPageEl.style.display = "none";
+            }
+            const gamePageEl = document.getElementById("gamePage");
+            if (gamePageEl) {
+                 gamePageEl.style.display = "block";
+            }
+            console.log("Step 6: Done.");
+
+            // Step 7: Reset UI
+            console.log("Step 7: Reset UI...");
+            const targetEl = document.getElementById('target-number-display');
+            if (targetEl && targetEl.querySelector('span')) {
+                targetEl.querySelector('span').textContent = '--';
+            }
+            const currentEl = document.getElementById('current-card-display');
+            if (currentEl && currentEl.querySelector('span')) {
+                currentEl.querySelector('span').textContent = '--';
+            }
+            const cardElement = document.getElementById("card");
+            if (cardElement) {
+                 cardElement.innerHTML = "";
+                 cardElement.classList.remove("glow-gold");
+            }
+            const buttonContainer = document.querySelector(".button-container");
+            if (buttonContainer) {
+                buttonContainer.innerHTML = '';
+            }
+            console.log("Step 7: Done.");
+
+            // Step 8: Define Button Positions based on screen size
+            console.log("Step 8: Defining button positions based on screen width...");
+            let buttonPositions;
+            const currentWidth = window.innerWidth;
+
+            if (currentWidth <= 600) { // Mobile
+                console.log("Using Mobile button positions (30%/70%).");
+                buttonPositions = [
+                    { top: "30%", left: "30%" }, { top: "70%", left: "70%" },
+                    { top: "30%", left: "70%" }, { top: "70%", left: "30%" }
+                ];
+            } else if (currentWidth <= 1024) { // Tablet
+                 console.log("Using Tablet button positions (22%/78%).");
+                 buttonPositions = [
+                    { top: "22%", left: "22%" }, { top: "78%", left: "78%" },
+                    { top: "22%", left: "78%" }, { top: "78%", left: "22%" }
+                 ];
+            } else { // Desktop
+                 console.log("Using Desktop button positions (25%/75% & 22%).");
+                 buttonPositions = [
+                    { top: "25%", left: "25%" }, { top: "75%", left: "75%" },
+                    { top: "25%", left: "75%" }, { top: "75%", left: "22%" }
+                 ];
+            }
+            console.log("Step 8: Done. Positions selected:", buttonPositions);
+
+            // Step 9: Start Countdown
+            console.log("Step 9: Start countdown...");
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            const countdownNumber = document.getElementById('countdown-number');
+
+            if (countdownOverlay && countdownNumber) {
+                countdownNumber.textContent = '3';
+                countdownOverlay.style.display = 'flex';
+                let count = 3;
+                console.log("Countdown visual started.");
+                clearTimeout(countdownSpeechTimeout);
+                console.log("Speak: 3");
+                speakMessage(count.toString());
+
+                const countdownInterval = setInterval(() => {
+                    try {
+                        count--;
+                        console.log(`Interval: count=${count}`);
+                        if (count > 0) {
+                            countdownNumber.textContent = count.toString();
+                            console.log(`Visual: ${count}`);
+                            clearTimeout(countdownSpeechTimeout);
+                            countdownSpeechTimeout = setTimeout(() => {
+                                console.log(`Speak: ${count}`);
+                                speakMessage(count.toString());
+                            }, 300); // Delay speech
+                        } else {
+                            console.log("Countdown finished. Clear interval.");
+                            clearInterval(countdownInterval);
+                            clearTimeout(countdownSpeechTimeout);
+
+                            countdownSpeechTimeout = setTimeout(() => {
+                                try {
+                                    console.log("Speak: 開始");
+                                    speakMessage("開始");
+
+                                    setTimeout(() => {
+                                        try {
+                                            console.log("Starting game logic...");
+                                            if (!gameActive && !isPaused) {
+                                                activePlayers.forEach(playerData => {
+                                                    const playerIndex = playerData.originalIndex;
+                                                    const playerName = playerData.name;
+                                                    let btn = document.createElement("button");
+                                                    btn.id = `player-btn-${playerIndex}`;
+                                                    btn.classList.add("game-btn");
+                                                    btn.innerHTML = `${playerName}<br>分數: 0`;
+                                                    // Apply positions determined above
+                                                    btn.style.top = buttonPositions[playerIndex].top;
+                                                    btn.style.left = buttonPositions[playerIndex].left;
+                                                    // CSS handles rotation via ID
+                                                    btn.addEventListener('click', (event) => {
+                                                         event.preventDefault();
+                                                         if (gameActive && !isPaused && !showingResult) {
+                                                             playerClick(playerIndex);
+                                                         }
+                                                    });
+                                                    if (buttonContainer) {
+                                                        buttonContainer.appendChild(btn);
+                                                    }
+                                                    playerElements[playerIndex] = btn;
+                                                });
+                                                console.log("Buttons created.");
+                                                gameActive = true;
+                                                startCardChanges();
+                                                playBGM();
+                                                console.log("--- Game Started ---");
+                                            } else {
+                                                console.warn("Logic start skipped.");
+                                            }
+                                        } catch (logicErr) {
+                                            console.error("!!! Logic Start Error:", logicErr);
+                                            alert("啟動遊戲邏輯錯誤！");
+                                        }
+                                    }, 600); // Delay after "Start" speech
+                                } catch (startSpeechErr) {
+                                    console.error("!!! Start Speech Error:", startSpeechErr);
+                                    alert("播放開始語音錯誤！");
+                                    if(countdownOverlay) {
+                                        countdownOverlay.style.display = 'none';
+                                    }
+                                }
+                            }, 500); // Delay before "Start" speech
+
+                            console.log("Hiding countdown overlay.");
+                            countdownOverlay.style.display = 'none';
+                        }
+                    } catch (intervalErr) {
+                        console.error("!!! Interval Error:", intervalErr);
+                        clearInterval(countdownInterval);
+                        if(countdownOverlay) {
+                            countdownOverlay.style.display = 'none';
+                        }
+                        alert("倒數計時錯誤！");
+                    }
+                }, 1000); // Visual countdown interval
+
+            } else {
+                console.error("Countdown elements missing!");
+                alert("找不到倒數元件！");
+                if (gamePageEl) {
+                    gamePageEl.style.display = "none";
+                }
+                if (setupPageEl) {
+                    setupPageEl.style.display = "flex";
+                }
+            }
+            console.log("Step 9: Countdown setup done.");
+
+        } catch (error) {
+            console.error("!!! CRITICAL in startGame:", error);
+            alert("啟動遊戲嚴重錯誤！檢查控制台。");
+            try {
+                const gamePageEl = document.getElementById("gamePage");
+                const setupPageEl = document.getElementById("setupPage");
+                if (gamePageEl) { gamePageEl.style.display = "none"; }
+                if (setupPageEl) { setupPageEl.style.display = "flex"; }
+            } catch (resetErr) {
+                // Ignore
+            }
+        }
+        console.log("--- startGame finished ---");
+    }
+
+    function updatePlayerButtonProgress(buttonElement, currentScore) {
+         if (!buttonElement || winScore <= 0) {
+            return;
+         }
+         const progress = Math.max(0, Math.min(1, currentScore / winScore));
+         const blurRadius = progress * 25;
+         const spreadRadius = progress * 22.5;
+         const baseMetallicShadow = `inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.5)`;
+         if (progress > 0.05) {
+              buttonElement.style.boxShadow = `0 0 ${blurRadius}px ${spreadRadius}px gold, ${baseMetallicShadow}`;
+              buttonElement.style.borderColor = 'rgba(255, 215, 0, 0.7)';
+         } else {
+             buttonElement.style.boxShadow = baseMetallicShadow;
+              buttonElement.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+         }
+    }
+
+    function updateGameStatus() {
+         if (!gameActive || showingResult || isPaused) {
+             return;
+         }
+         const targetEl = document.getElementById('target-number-display');
+         const currentEl = document.getElementById('current-card-display');
+         const countdownOverlay = document.getElementById('countdown-overlay');
+         if (countdownOverlay && countdownOverlay.style.display === 'flex') {
+             if (targetEl && targetEl.querySelector('span')) {
+                 targetEl.querySelector('span').textContent = '--';
+             }
+             if (currentEl && currentEl.querySelector('span')) {
+                 currentEl.querySelector('span').textContent = '--';
+             }
+             return;
+         }
+         if (targetEl && targetEl.querySelector('span')) {
+             targetEl.querySelector('span').textContent = targetNumber > 0 ? targetNumber.toString() : '--';
+         }
+         if (currentEl && currentEl.querySelector('span')) {
+             currentEl.querySelector('span').textContent = currentCardValue > 0 ? currentCardValue.toString() : '--';
+         }
+         Object.keys(playerElements).forEach(indexStr => {
+             const index = parseInt(indexStr);
+             const btn = playerElements[index];
+             if (btn && scores.hasOwnProperty(index)) {
+                 btn.innerHTML = `${players[index]}<br>分數: ${scores[index]}`;
+                 updatePlayerButtonProgress(btn, scores[index]);
+             }
+         });
+    }
+
+    function startCardChanges() {
+         if (!gameActive || isPaused) {
+             return;
+         }
+         clearInterval(currentCardInterval);
+         clearTimeout(timeoutId);
+         console.log(`[CardChange] Starting every ${changeTime}s.`);
+         changeCardAndNumber();
+         currentCardInterval = setInterval(changeCardAndNumber, changeTime * 1000);
+    }
+
+    function changeCardAndNumber() {
+         if (!gameActive || showingResult || isPaused) {
+             return;
+         }
+         // console.log("[CardChange] Changing..."); // Reduce logs
+         const suits = ["♠", "♥", "♦", "♣"];
+         const numericValues = ["1", "2", "3", "4", "5", "6", "7", "8"];
+         const randomSuit = suits[Math.floor(Math.random() * suits.length)];
+         const randomValueStr = numericValues[Math.floor(Math.random() * numericValues.length)];
+         currentCardValue = parseInt(randomValueStr);
+         const suitColorClass = (randomSuit === "♥" || randomSuit === "♦") ? 'suit-red' : 'suit-black';
+         const cardElement = document.getElementById("card");
+         if (cardElement) {
+             cardElement.innerHTML = `
+                 <div class="card-corner top-left ${suitColorClass}"><span class="rank">${randomValueStr}</span></div>
+                 <div class="card-center ${suitColorClass}"><span class="suit">${randomSuit}</span></div>
+                 <div class="card-corner bottom-right ${suitColorClass}"><span class="rank">${randomValueStr}</span></div>`;
+             cardElement.className = `card ${suitColorClass}`;
+         } else {
+             console.error("Card element missing!");
+             return;
+         }
+         targetNumber = Math.floor(Math.random() * 10) + 1;
+         clearTimeout(timeoutId);
+         clearTimeout(countdownSpeechTimeout);
+         timeoutId = setTimeout(() => {
+             if (gameActive && !showingResult && !isPaused) {
+                 // console.log(`[CardChange] Announce: ${targetNumber}`);
+                 speakMessage(targetNumber.toString());
+             }
+         }, 400);
+         updateGameStatus();
+         if (currentCardValue === targetNumber) {
+              console.log(`[CardChange] *** MATCH! ***`);
+              if (cardElement) {
+                  cardElement.classList.add("glow-gold");
+              }
+         } else {
+              if (cardElement) {
+                  cardElement.classList.remove("glow-gold");
+              }
+         }
+    }
+
+    function playerClick(playerIndex) {
+         if (!gameActive || isPaused || showingResult) {
+             return;
+         }
+         console.log(`[PlayerClick] P${playerIndex}`);
+         showingResult = true;
+         clearInterval(currentCardInterval);
+         clearTimeout(timeoutId);
+         clearTimeout(countdownSpeechTimeout);
+         const cardElem = document.getElementById("card");
+         if (cardElem) {
+              cardElem.classList.remove("glow-gold");
+         }
+         const playerName = players[playerIndex];
+         let message = "";
+         let speakText = "";
+         if (currentCardValue === targetNumber && currentCardValue !== 0) {
+             scores[playerIndex]++;
+             message = `✅ ${playerName} 正確! +1分!`;
+             speakText = `${playerName} 拍對了!`;
+             console.log(`Correct! Score: ${scores[playerIndex]}`);
+         } else {
+             scores[playerIndex]--;
+             message = `❌ ${playerName} 錯誤! -1分!`;
+             speakText = `${playerName} 拍錯了!`;
+             console.log(`Incorrect! Score: ${scores[playerIndex]}`);
+         }
+         speakMessage(speakText);
+         const targetEl = document.getElementById('target-number-display');
+         const currentEl = document.getElementById('current-card-display');
+         if (targetEl) {
+             targetEl.innerHTML = message.includes("正確") ? message : " ";
+         }
+         if (currentEl) {
+             currentEl.innerHTML = message.includes("錯誤") ? message : " ";
+         }
+         Object.keys(playerElements).forEach(indexStr => {
+             const idx = parseInt(indexStr);
+             const button = playerElements[idx];
+             if (button && scores.hasOwnProperty(idx)) {
+                 button.innerHTML = `${players[idx]}<br>分數: ${scores[idx]}`;
+                 updatePlayerButtonProgress(button, scores[idx]);
+             }
+         });
+         if (checkWinCondition()) {
+             return;
+         }
+         timeoutId = setTimeout(() => {
+             showingResult = false;
+             if (targetEl && targetEl.querySelector('span')) {
+                 targetEl.innerHTML = `目標: <span>${targetNumber > 0 ? targetNumber : '--'}</span>`;
+             }
+             if (currentEl && currentEl.querySelector('span')) {
+                 currentEl.innerHTML = `卡牌: <span>${currentCardValue > 0 ? currentCardValue : '--'}</span>`;
+             }
+             if (gameActive && !isPaused) {
+                 console.log("[PlayerClick] Resume changes.");
+                 currentCardValue = 0;
+                 targetNumber = 0;
+                 updateGameStatus();
+                 startCardChanges();
+             }
+         }, 1500);
+    }
+
+    function checkWinCondition() {
+         let winnerIndex = -1;
+         for (const indexStr in scores) {
+             const index = parseInt(indexStr);
+             if (scores[index] >= winScore) {
+                 if (winnerIndex === -1) {
+                     winnerIndex = index;
+                     break;
+                 }
+             }
+         }
+         if (winnerIndex !== -1) {
+             console.log(`[WinCheck] P${winnerIndex} wins!`);
+             gameActive = false;
+             isPaused = true;
+             clearInterval(currentCardInterval);
+             clearTimeout(timeoutId);
+             clearTimeout(countdownSpeechTimeout);
+             const synth = getSpeechSynthesis();
+             if (synth) {
+                 synth.cancel();
+             }
+             const winnerName = players[winnerIndex];
+             const winBanner = document.getElementById('win-banner');
+             const winText = winBanner ? winBanner.querySelector('.win-text') : null;
+             if (winBanner && winText) {
+                 winText.innerHTML = `🎉 恭喜 ${winnerName} 獲得勝利！ 🎉<br><small>(點擊此處返回)</small>`;
+                 winBanner.style.display = 'flex';
+                 console.log("[WinCheck] Banner displayed.");
+             } else {
+                  console.error("Win banner missing!");
+             }
+             speakMessage(`恭喜 ${winnerName} 獲得勝利！`);
+             stopBGM();
+             return true;
+         }
+         return false;
+    }
+
+    function pauseGame() {
+         if (!gameActive || isPaused) {
+             return;
+         }
+         console.log("--- Paused ---");
+         isPaused = true;
+         clearInterval(currentCardInterval);
+         clearTimeout(timeoutId);
+         clearTimeout(countdownSpeechTimeout);
+         const synth = getSpeechSynthesis();
+         if (synth) {
+             synth.cancel();
+         }
+         canSpeak = true;
+         pauseBGM();
+         const pauseOverlay = document.getElementById('pause-overlay');
+         if (pauseOverlay) {
+             pauseOverlay.style.display = 'flex';
+         }
+    }
+
+    function resumeGame() {
+         if (!isPaused || !gameActive) {
+             return;
+         }
+         console.log("--- Resumed ---");
+         const pauseOverlay = document.getElementById('pause-overlay');
+         if (pauseOverlay) {
+             pauseOverlay.style.display = 'none';
+         }
+         isPaused = false;
+         canSpeak = true;
+         if (gameActive) {
+             console.log("[ResumeGame] Resuming changes.");
+             setTimeout(() => {
+                 if (gameActive && !isPaused) {
+                     startCardChanges();
+                     playBGM();
+                 }
+             }, 500);
+         }
+    }
+
+    function restartGame() {
+        console.log("--- restartGame called (v3.5.4 Function Start) ---");
+        let errorSource = "Unknown";
+        try {
+            errorSource = "State Reset";
+            console.log("Resetting state variables...");
+            gameActive = false;
+            showingResult = false;
+            isPaused = false;
+            currentCardValue = 0;
+            targetNumber = 0;
+            scores = {};
+            players = [];
+            canSpeak = true;
+
+            errorSource = "Timer Clearing";
+            console.log("Clearing timers...");
+            clearInterval(currentCardInterval);
+            clearTimeout(timeoutId);
+            clearTimeout(countdownSpeechTimeout);
+
+            try {
+                errorSource = "Speech Cancellation";
+                console.log("Stopping speech...");
+                const synth = getSpeechSynthesis();
+                if (synth && (synth.speaking || synth.pending)) {
+                    synth.cancel();
+                }
+            } catch (speechError) {
+                console.error("Non-critical error stopping speech:", speechError);
+            }
+
+            errorSource = "UI Reset (Card/Text)";
+            console.log("Resetting card and text displays...");
+            const cardElement = document.getElementById("card");
+            if (cardElement) {
+                cardElement.classList.remove("glow-gold");
+            }
+            const targetEl = document.getElementById('target-number-display');
+            if (targetEl && targetEl.querySelector('span')) {
+                targetEl.querySelector('span').textContent = '--';
+            }
+            const currentEl = document.getElementById('current-card-display');
+            if (currentEl && currentEl.querySelector('span')) {
+                currentEl.querySelector('span').textContent = '--';
+            }
+
+            try {
+                errorSource = "UI Reset (Buttons)";
+                console.log("Clearing button container...");
+                const buttonContainer = document.querySelector(".button-container");
+                if (buttonContainer) {
+                    buttonContainer.innerHTML = '';
+                }
+                playerElements = {};
+            } catch (domError) {
+                 console.error("Non-critical error clearing buttons:", domError);
+            }
+
+            errorSource = "Overlay/Banner Hiding";
+            console.log("Hiding overlays and banner...");
+            const pauseOverlay = document.getElementById('pause-overlay');
+            if (pauseOverlay) {
+                pauseOverlay.style.display = 'none';
+            }
+            const winBanner = document.getElementById('win-banner');
+            if (winBanner) {
+                winBanner.style.display = 'none';
+            }
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            if (countdownOverlay) {
+                countdownOverlay.style.display = 'none';
+            }
+
+            try {
+                errorSource = "BGM Stop";
+                console.log("Stopping BGM...");
+                stopBGM();
+            } catch (bgmError) {
+                 console.error("Non-critical error stopping BGM:", bgmError);
+            }
+
+            errorSource = "Page Switching";
+            console.log("Switching pages...");
+            const gamePageEl = document.getElementById("gamePage");
+            const setupPageEl = document.getElementById("setupPage");
+            if (gamePageEl) {
+                gamePageEl.style.display = "none";
+            }
+            if (setupPageEl) {
+                setupPageEl.style.display = "flex";
+            }
+
+            console.log("--- Game reset. Returned to setup page (Function End). ---");
+
+        } catch (error) {
+            console.error(`!!! ERROR in restartGame (Source: ${errorSource}):`, error);
+            alert(`重新啟動遊戲時在 [${errorSource}] 階段發生錯誤！請檢查控制台。\nError during restart [${errorSource}]. Check console.`);
+        }
+    }
+
+    // --- 背景音樂控制函數 ---
+    function toggleBGM() {
+        if (!bgmAudio) {
+            bgmAudio = document.getElementById('background-music');
+            if (!bgmAudio) {
+                console.error("BGM not found!");
+                return;
+            }
+            bgmAudio.onplay = () => {
+                bgmPlaying = true;
+                console.log("[BGM] Playing.");
+            };
+            bgmAudio.onpause = () => {
+                bgmPlaying = false;
+                console.log("[BGM] Paused.");
+            };
+        }
+        try {
+            if (bgmPlaying) {
+                bgmAudio.pause();
+            } else {
+                bgmAudio.play().catch(error => {
+                    console.error("[BGM] Playback failed:", error);
+                    // alert("無法自動播放BGM"); // Muted alert for less interruption
+                });
+            }
+        } catch (e) {
+            console.error("[BGM] Toggle Error:", e);
+        }
+    }
+
+    function playBGM() {
+        if (!bgmAudio) {
+            bgmAudio = document.getElementById('background-music');
+        }
+        if (bgmAudio && !bgmPlaying) {
+            bgmAudio.play().catch(e => {
+                console.error("[BGM] Playback failed:", e);
+            });
+        }
+    }
+
+    function pauseBGM() {
+        if (bgmAudio && bgmPlaying) {
+            bgmAudio.pause();
+        }
+    }
+
+    function stopBGM() {
+        if (bgmAudio) {
+            bgmAudio.pause();
+            bgmAudio.currentTime = 0; // Reset position
+            bgmPlaying = false;
+            console.log("[BGM] Stopped.");
+        }
+    }
+
+    // --- 初始化 ---
+    window.addEventListener('load', () => {
+        console.log("Window loaded. Initial setup.");
+        getSpeechSynthesis(); // Attempt to initialize early
+        loadVoices(); // Attempt to load voices early
+        bgmAudio = document.getElementById('background-music');
+        if (!bgmAudio) {
+            console.error("BGM Audio element not found on load!");
+        } else {
+            bgmAudio.volume = 0.2; // Set default volume
+            bgmAudio.onplay = () => { bgmPlaying = true; }; // Set playing flag
+            bgmAudio.onpause = () => { bgmPlaying = false; }; // Set playing flag
+        }
+    });
+
+    </script>
+</body>
+</html>
