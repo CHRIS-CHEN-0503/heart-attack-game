@@ -81,18 +81,19 @@
 <body>
 
     <div id="setupPage">
-        <h2 class="setup-title">心臟病遊戲 <span class="version-number">v3.5.4</span></h2>
+        <h2 class="setup-title">心臟病遊戲 <span class="version-number">v3.5.5</span></h2>
         <div class="input-group"><label for="player1">玩家1 名稱</label><input type="text" id="player1" placeholder="玩家1 (左上)" value="Player 1" /></div>
         <div class="input-group"><label for="player2">玩家2 名稱</label><input type="text" id="player2" placeholder="玩家2 (右下)" value="Player 2" /></div>
         <div class="input-group"><label for="player3">玩家3 名稱</label><input type="text" id="player3" placeholder="玩家3 (右上)" /></div>
         <div class="input-group"><label for="player4">玩家4 名稱</label><input type="text" id="player4" placeholder="玩家4 (左下)" /></div>
         <div class="input-group"><label for="changeTime">換牌秒數 (2~8 秒)</label><input type="number" id="changeTime" min="2" max="8" value="3" /></div>
         <div class="input-group"><label for="winScore">勝利分數</label><input type="number" id="winScore" value="5" /></div>
+        <div class="input-group"><label for="numberRange">數字範圍 (1~10)</label><input type="number" id="numberRange" min="1" max="10" value="8" /></div>
         <button onclick="startGame()">開始遊戲</button>
     </div>
 
     <div id="gamePage">
-        <h1>心臟病遊戲 <span class="version-number">v3.5.4</span></h1>
+        <h1>心臟病遊戲 <span class="version-number">v3.5.5</span></h1>
         <div id="card" class="card"></div>
         <div class="button-container"></div>
         <div id="target-number-display" class="game-info left">目標: <span>--</span></div>
@@ -114,14 +115,15 @@
 
     <script>
     // ========================================
-    //  心臟病遊戲 JavaScript v3.5.4
+    //  心臟病遊戲 JavaScript v3.5.5
     // ========================================
     // Author: Gemini (Generated Code)
-    // Date: 2025-04-20
-    // Changes in v3.5.4:
+    // Date: 2025-05-17
+    // Changes in v3.5.5:
+    // - Added input for number range (1-10) for both card values and target numbers.
     // - Fixed button positioning logic in startGame() for different screen sizes.
     // - Refined tablet CSS styles.
-    // - Kept v3.5.3 JS logic otherwise (including debugging).
+    // - Kept v3.5.4 JS logic otherwise (including debugging).
     // ========================================
 
     // --- 全域變數 ---
@@ -129,6 +131,7 @@
     let playerElements = {};
     let changeTime = 3;
     let winScore = 5;
+    let maxNumberRange = 8; // 新增：數字範圍
     let currentCardValue = 0;
     let targetNumber = 0;
     let gameActive = false;
@@ -139,7 +142,7 @@
     let availableVoices = [];
     let showingResult = false;
     let isPaused = false;
-    const GAME_VERSION = "v3.5.4";
+    const GAME_VERSION = "v3.5.5";
     let canSpeak = true;
     let bgmAudio;
     let bgmPlaying = false;
@@ -180,7 +183,7 @@
                 console.warn("[Speech] No voices yet.");
             }
         }
-     }
+    }
 
     function speakMessageInternal(synth, text) {
         try {
@@ -210,7 +213,7 @@
                 msg.voice = desiredVoice;
                 console.log(`[Speech] Using: ${desiredVoice.name} ${femaleKeywords.some(k => desiredVoice.name.includes(k)) ? '(Female Pref)' : ''}`);
             } else {
-                 console.warn(`[Speech] Female voice not found. Using default.`);
+                console.warn(`[Speech] Female voice not found. Using default.`);
             }
             msg.onend = () => {
                 console.log(`[Speech] End: "${text}"`);
@@ -228,7 +231,7 @@
             console.error("[Speech] Utterance Error:", err);
             canSpeak = true;
         }
-     }
+    }
 
     function speakMessage(text) {
         console.log(`[SpeakMessage] Request: "${text}"`);
@@ -244,14 +247,14 @@
         }
         try {
             if (synth.speaking || synth.pending) {
-                 console.warn(`[SpeakMessage] Busy. Cancelling.`);
-                 synth.cancel();
-                 canSpeak = true;
-                 countdownSpeechTimeout = setTimeout(() => {
+                console.warn(`[SpeakMessage] Busy. Cancelling.`);
+                synth.cancel();
+                canSpeak = true;
+                countdownSpeechTimeout = setTimeout(() => {
                     console.log(`[SpeakMessage] Retrying: "${text}"`);
                     speakMessage(text);
-                 }, 150);
-                 return;
+                }, 150);
+                return;
             }
         } catch(e) {
             console.error("[SpeakMessage] Cancel Error:", e);
@@ -259,12 +262,12 @@
         }
         canSpeak = false;
         speakMessageInternal(synth, text);
-     }
+    }
 
     // --- 遊戲邏輯函數 ---
 
     function startGame() {
-        console.log("--- startGame called (v3.5.4) ---");
+        console.log("--- startGame called (v3.5.5) ---");
         try {
             // Step 1: Init state
             console.log("Step 1: Init state...");
@@ -279,11 +282,11 @@
             console.log("Step 2: Hide overlays...");
             const pauseOverlay = document.getElementById('pause-overlay');
             if (pauseOverlay) {
-                 pauseOverlay.style.display='none';
+                pauseOverlay.style.display='none';
             }
             const winBanner = document.getElementById('win-banner');
             if (winBanner) {
-                 winBanner.style.display='none';
+                winBanner.style.display='none';
             }
             console.log("Step 2: Done.");
 
@@ -297,17 +300,23 @@
             ];
             changeTime = parseInt(document.getElementById("changeTime").value) || 3;
             winScore = parseInt(document.getElementById("winScore").value) || 5;
-            console.log(`Step 3: Players=${players.filter(n=>n).length}, Time=${changeTime}, Score=${winScore}.`);
+            maxNumberRange = parseInt(document.getElementById("numberRange").value) || 8; // Read new input
+            console.log(`Step 3: Players=${players.filter(n=>n).length}, Time=${changeTime}, Score=${winScore}, NumberRange=${maxNumberRange}.`);
 
-            // Step 4: Validate players
-            console.log("Step 4: Validate players...");
+            // Step 4: Validate inputs
+            console.log("Step 4: Validate inputs...");
             let activePlayers = players.map((name, index) => ({ name, originalIndex: index })).filter(p => p.name !== "");
             if (activePlayers.length < 2) {
                 alert("至少需要輸入兩位有效的玩家名稱！");
                 console.error("Validation Failed: Not enough players.");
                 return;
             }
-            console.log(`Step 4: Valid players = ${activePlayers.length}.`);
+            if (maxNumberRange < 1 || maxNumberRange > 10) {
+                alert("數字範圍必須在 1 到 10 之間！");
+                console.error("Validation Failed: Number range out of bounds.");
+                return;
+            }
+            console.log(`Step 4: Valid players = ${activePlayers.length}, NumberRange valid.`);
 
             // Step 5: Reset state
             console.log("Step 5: Reset state...");
@@ -326,7 +335,7 @@
             }
             const gamePageEl = document.getElementById("gamePage");
             if (gamePageEl) {
-                 gamePageEl.style.display = "block";
+                gamePageEl.style.display = "block";
             }
             console.log("Step 6: Done.");
 
@@ -342,8 +351,8 @@
             }
             const cardElement = document.getElementById("card");
             if (cardElement) {
-                 cardElement.innerHTML = "";
-                 cardElement.classList.remove("glow-gold");
+                cardElement.innerHTML = "";
+                cardElement.classList.remove("glow-gold");
             }
             const buttonContainer = document.querySelector(".button-container");
             if (buttonContainer) {
@@ -363,17 +372,17 @@
                     { top: "30%", left: "70%" }, { top: "70%", left: "30%" }
                 ];
             } else if (currentWidth <= 1024) { // Tablet
-                 console.log("Using Tablet button positions (22%/78%).");
-                 buttonPositions = [
+                console.log("Using Tablet button positions (22%/78%).");
+                buttonPositions = [
                     { top: "22%", left: "22%" }, { top: "78%", left: "78%" },
                     { top: "22%", left: "78%" }, { top: "78%", left: "22%" }
-                 ];
+                ];
             } else { // Desktop
-                 console.log("Using Desktop button positions (25%/75% & 22%).");
-                 buttonPositions = [
+                console.log("Using Desktop button positions (25%/75% & 22%).");
+                buttonPositions = [
                     { top: "25%", left: "25%" }, { top: "75%", left: "75%" },
                     { top: "25%", left: "75%" }, { top: "75%", left: "22%" }
-                 ];
+                ];
             }
             console.log("Step 8: Done. Positions selected:", buttonPositions);
 
@@ -429,10 +438,10 @@
                                                     btn.style.left = buttonPositions[playerIndex].left;
                                                     // CSS handles rotation via ID
                                                     btn.addEventListener('click', (event) => {
-                                                         event.preventDefault();
-                                                         if (gameActive && !isPaused && !showingResult) {
-                                                             playerClick(playerIndex);
-                                                         }
+                                                        event.preventDefault();
+                                                        if (gameActive && !isPaused && !showingResult) {
+                                                            playerClick(playerIndex);
+                                                        }
                                                     });
                                                     if (buttonContainer) {
                                                         buttonContainer.appendChild(btn);
@@ -502,258 +511,260 @@
     }
 
     function updatePlayerButtonProgress(buttonElement, currentScore) {
-         if (!buttonElement || winScore <= 0) {
+        if (!buttonElement || winScore <= 0) {
             return;
-         }
-         const progress = Math.max(0, Math.min(1, currentScore / winScore));
-         const blurRadius = progress * 25;
-         const spreadRadius = progress * 22.5;
-         const baseMetallicShadow = `inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.5)`;
-         if (progress > 0.05) {
-              buttonElement.style.boxShadow = `0 0 ${blurRadius}px ${spreadRadius}px gold, ${baseMetallicShadow}`;
-              buttonElement.style.borderColor = 'rgba(255, 215, 0, 0.7)';
-         } else {
-             buttonElement.style.boxShadow = baseMetallicShadow;
-              buttonElement.style.borderColor = 'rgba(255, 255, 255, 0.5)';
-         }
+        }
+        const progress = Math.max(0, Math.min(1, currentScore / winScore));
+        const blurRadius = progress * 25;
+        const spreadRadius = progress * 22.5;
+        const baseMetallicShadow = `inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.5)`;
+        if (progress > 0.05) {
+            buttonElement.style.boxShadow = `0 0 ${blurRadius}px ${spreadRadius}px gold, ${baseMetallicShadow}`;
+            buttonElement.style.borderColor = 'rgba(255, 215, 0, 0.7)';
+        } else {
+            buttonElement.style.boxShadow = baseMetallicShadow;
+            buttonElement.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+        }
     }
 
     function updateGameStatus() {
-         if (!gameActive || showingResult || isPaused) {
-             return;
-         }
-         const targetEl = document.getElementById('target-number-display');
-         const currentEl = document.getElementById('current-card-display');
-         const countdownOverlay = document.getElementById('countdown-overlay');
-         if (countdownOverlay && countdownOverlay.style.display === 'flex') {
-             if (targetEl && targetEl.querySelector('span')) {
-                 targetEl.querySelector('span').textContent = '--';
-             }
-             if (currentEl && currentEl.querySelector('span')) {
-                 currentEl.querySelector('span').textContent = '--';
-             }
-             return;
-         }
-         if (targetEl && targetEl.querySelector('span')) {
-             targetEl.querySelector('span').textContent = targetNumber > 0 ? targetNumber.toString() : '--';
-         }
-         if (currentEl && currentEl.querySelector('span')) {
-             currentEl.querySelector('span').textContent = currentCardValue > 0 ? currentCardValue.toString() : '--';
-         }
-         Object.keys(playerElements).forEach(indexStr => {
-             const index = parseInt(indexStr);
-             const btn = playerElements[index];
-             if (btn && scores.hasOwnProperty(index)) {
-                 btn.innerHTML = `${players[index]}<br>分數: ${scores[index]}`;
-                 updatePlayerButtonProgress(btn, scores[index]);
-             }
-         });
+        if (!gameActive || showingResult || isPaused) {
+            return;
+        }
+        const targetEl = document.getElementById('target-number-display');
+        const currentEl = document.getElementById('current-card-display');
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        if (countdownOverlay && countdownOverlay.style.display === 'flex') {
+            if (targetEl && targetEl.querySelector('span')) {
+                targetEl.querySelector('span').textContent = '--';
+            }
+            if (currentEl && currentEl.querySelector('span')) {
+                currentEl.querySelector('span').textContent = '--';
+            }
+            return;
+        }
+        if (targetEl && targetEl.querySelector('span')) {
+            targetEl.querySelector('span').textContent = targetNumber > 0 ? targetNumber.toString() : '--';
+        }
+        if (currentEl && currentEl.querySelector('span')) {
+            currentEl.querySelector('span').textContent = currentCardValue > 0 ? currentCardValue.toString() : '--';
+        }
+        Object.keys(playerElements).forEach(indexStr => {
+            const index = parseInt(indexStr);
+            const btn = playerElements[index];
+            if (btn && scores.hasOwnProperty(index)) {
+                btn.innerHTML = `${players[index]}<br>分數: ${scores[index]}`;
+                updatePlayerButtonProgress(btn, scores[index]);
+            }
+        });
     }
 
     function startCardChanges() {
-         if (!gameActive || isPaused) {
-             return;
-         }
-         clearInterval(currentCardInterval);
-         clearTimeout(timeoutId);
-         console.log(`[CardChange] Starting every ${changeTime}s.`);
-         changeCardAndNumber();
-         currentCardInterval = setInterval(changeCardAndNumber, changeTime * 1000);
+        if (!gameActive || isPaused) {
+            return;
+        }
+        clearInterval(currentCardInterval);
+        clearTimeout(timeoutId);
+        console.log(`[CardChange] Starting every ${changeTime}s.`);
+        changeCardAndNumber();
+        currentCardInterval = setInterval(changeCardAndNumber, changeTime * 1000);
     }
 
     function changeCardAndNumber() {
-         if (!gameActive || showingResult || isPaused) {
-             return;
-         }
-         // console.log("[CardChange] Changing..."); // Reduce logs
-         const suits = ["♠", "♥", "♦", "♣"];
-         const numericValues = ["1", "2", "3", "4", "5", "6", "7", "8"];
-         const randomSuit = suits[Math.floor(Math.random() * suits.length)];
-         const randomValueStr = numericValues[Math.floor(Math.random() * numericValues.length)];
-         currentCardValue = parseInt(randomValueStr);
-         const suitColorClass = (randomSuit === "♥" || randomSuit === "♦") ? 'suit-red' : 'suit-black';
-         const cardElement = document.getElementById("card");
-         if (cardElement) {
-             cardElement.innerHTML = `
-                 <div class="card-corner top-left ${suitColorClass}"><span class="rank">${randomValueStr}</span></div>
-                 <div class="card-center ${suitColorClass}"><span class="suit">${randomSuit}</span></div>
-                 <div class="card-corner bottom-right ${suitColorClass}"><span class="rank">${randomValueStr}</span></div>`;
-             cardElement.className = `card ${suitColorClass}`;
-         } else {
-             console.error("Card element missing!");
-             return;
-         }
-         targetNumber = Math.floor(Math.random() * 10) + 1;
-         clearTimeout(timeoutId);
-         clearTimeout(countdownSpeechTimeout);
-         timeoutId = setTimeout(() => {
-             if (gameActive && !showingResult && !isPaused) {
-                 // console.log(`[CardChange] Announce: ${targetNumber}`);
-                 speakMessage(targetNumber.toString());
-             }
-         }, 400);
-         updateGameStatus();
-         if (currentCardValue === targetNumber) {
-              console.log(`[CardChange] *** MATCH! ***`);
-              if (cardElement) {
-                  cardElement.classList.add("glow-gold");
-              }
-         } else {
-              if (cardElement) {
-                  cardElement.classList.remove("glow-gold");
-              }
-         }
+        if (!gameActive || showingResult || isPaused) {
+            return;
+        }
+        // console.log("[CardChange] Changing..."); // Reduce logs
+        const suits = ["♠", "♥", "♦", "♣"];
+        // Dynamically create numeric values array based on maxNumberRange
+        const numericValues = Array.from({ length: maxNumberRange }, (_, i) => (i + 1).toString());
+        const randomSuit = suits[Math.floor(Math.random() * suits.length)];
+        const randomValueStr = numericValues[Math.floor(Math.random() * numericValues.length)];
+        currentCardValue = parseInt(randomValueStr);
+        const suitColorClass = (randomSuit === "♥" || randomSuit === "♦") ? 'suit-red' : 'suit-black';
+        const cardElement = document.getElementById("card");
+        if (cardElement) {
+            cardElement.innerHTML = `
+                <div class="card-corner top-left ${suitColorClass}"><span class="rank">${randomValueStr}</span></div>
+                <div class="card-center ${suitColorClass}"><span class="suit">${randomSuit}</span></div>
+                <div class="card-corner bottom-right ${suitColorClass}"><span class="rank">${randomValueStr}</span></div>`;
+            cardElement.className = `card ${suitColorClass}`;
+        } else {
+            console.error("Card element missing!");
+            return;
+        }
+        // Generate target number within the specified maxNumberRange
+        targetNumber = Math.floor(Math.random() * maxNumberRange) + 1;
+        clearTimeout(timeoutId);
+        clearTimeout(countdownSpeechTimeout);
+        timeoutId = setTimeout(() => {
+            if (gameActive && !showingResult && !isPaused) {
+                // console.log(`[CardChange] Announce: ${targetNumber}`);
+                speakMessage(targetNumber.toString());
+            }
+        }, 400);
+        updateGameStatus();
+        if (currentCardValue === targetNumber) {
+            console.log(`[CardChange] *** MATCH! ***`);
+            if (cardElement) {
+                cardElement.classList.add("glow-gold");
+            }
+        } else {
+            if (cardElement) {
+                cardElement.classList.remove("glow-gold");
+            }
+        }
     }
 
     function playerClick(playerIndex) {
-         if (!gameActive || isPaused || showingResult) {
-             return;
-         }
-         console.log(`[PlayerClick] P${playerIndex}`);
-         showingResult = true;
-         clearInterval(currentCardInterval);
-         clearTimeout(timeoutId);
-         clearTimeout(countdownSpeechTimeout);
-         const cardElem = document.getElementById("card");
-         if (cardElem) {
-              cardElem.classList.remove("glow-gold");
-         }
-         const playerName = players[playerIndex];
-         let message = "";
-         let speakText = "";
-         if (currentCardValue === targetNumber && currentCardValue !== 0) {
-             scores[playerIndex]++;
-             message = `✅ ${playerName} 正確! +1分!`;
-             speakText = `${playerName} 拍對了!`;
-             console.log(`Correct! Score: ${scores[playerIndex]}`);
-         } else {
-             scores[playerIndex]--;
-             message = `❌ ${playerName} 錯誤! -1分!`;
-             speakText = `${playerName} 拍錯了!`;
-             console.log(`Incorrect! Score: ${scores[playerIndex]}`);
-         }
-         speakMessage(speakText);
-         const targetEl = document.getElementById('target-number-display');
-         const currentEl = document.getElementById('current-card-display');
-         if (targetEl) {
-             targetEl.innerHTML = message.includes("正確") ? message : " ";
-         }
-         if (currentEl) {
-             currentEl.innerHTML = message.includes("錯誤") ? message : " ";
-         }
-         Object.keys(playerElements).forEach(indexStr => {
-             const idx = parseInt(indexStr);
-             const button = playerElements[idx];
-             if (button && scores.hasOwnProperty(idx)) {
-                 button.innerHTML = `${players[idx]}<br>分數: ${scores[idx]}`;
-                 updatePlayerButtonProgress(button, scores[idx]);
-             }
-         });
-         if (checkWinCondition()) {
-             return;
-         }
-         timeoutId = setTimeout(() => {
-             showingResult = false;
-             if (targetEl && targetEl.querySelector('span')) {
-                 targetEl.innerHTML = `目標: <span>${targetNumber > 0 ? targetNumber : '--'}</span>`;
-             }
-             if (currentEl && currentEl.querySelector('span')) {
-                 currentEl.innerHTML = `卡牌: <span>${currentCardValue > 0 ? currentCardValue : '--'}</span>`;
-             }
-             if (gameActive && !isPaused) {
-                 console.log("[PlayerClick] Resume changes.");
-                 currentCardValue = 0;
-                 targetNumber = 0;
-                 updateGameStatus();
-                 startCardChanges();
-             }
-         }, 1500);
+        if (!gameActive || isPaused || showingResult) {
+            return;
+        }
+        console.log(`[PlayerClick] P${playerIndex}`);
+        showingResult = true;
+        clearInterval(currentCardInterval);
+        clearTimeout(timeoutId);
+        clearTimeout(countdownSpeechTimeout);
+        const cardElem = document.getElementById("card");
+        if (cardElem) {
+            cardElem.classList.remove("glow-gold");
+        }
+        const playerName = players[playerIndex];
+        let message = "";
+        let speakText = "";
+        if (currentCardValue === targetNumber && currentCardValue !== 0) {
+            scores[playerIndex]++;
+            message = `✅ ${playerName} 正確! +1分!`;
+            speakText = `${playerName} 拍對了!`;
+            console.log(`Correct! Score: ${scores[playerIndex]}`);
+        } else {
+            scores[playerIndex]--;
+            message = `❌ ${playerName} 錯誤! -1分!`;
+            speakText = `${playerName} 拍錯了!`;
+            console.log(`Incorrect! Score: ${scores[playerIndex]}`);
+        }
+        speakMessage(speakText);
+        const targetEl = document.getElementById('target-number-display');
+        const currentEl = document.getElementById('current-card-display');
+        if (targetEl) {
+            targetEl.innerHTML = message.includes("正確") ? message : " ";
+        }
+        if (currentEl) {
+            currentEl.innerHTML = message.includes("錯誤") ? message : " ";
+        }
+        Object.keys(playerElements).forEach(indexStr => {
+            const idx = parseInt(indexStr);
+            const button = playerElements[idx];
+            if (button && scores.hasOwnProperty(idx)) {
+                button.innerHTML = `${players[idx]}<br>分數: ${scores[idx]}`;
+                updatePlayerButtonProgress(button, scores[idx]);
+            }
+        });
+        if (checkWinCondition()) {
+            return;
+        }
+        timeoutId = setTimeout(() => {
+            showingResult = false;
+            if (targetEl && targetEl.querySelector('span')) {
+                targetEl.innerHTML = `目標: <span>${targetNumber > 0 ? targetNumber : '--'}</span>`;
+            }
+            if (currentEl && currentEl.querySelector('span')) {
+                currentEl.innerHTML = `卡牌: <span>${currentCardValue > 0 ? currentCardValue : '--'}</span>`;
+            }
+            if (gameActive && !isPaused) {
+                console.log("[PlayerClick] Resume changes.");
+                currentCardValue = 0;
+                targetNumber = 0;
+                updateGameStatus();
+                startCardChanges();
+            }
+        }, 1500);
     }
 
     function checkWinCondition() {
-         let winnerIndex = -1;
-         for (const indexStr in scores) {
-             const index = parseInt(indexStr);
-             if (scores[index] >= winScore) {
-                 if (winnerIndex === -1) {
-                     winnerIndex = index;
-                     break;
-                 }
-             }
-         }
-         if (winnerIndex !== -1) {
-             console.log(`[WinCheck] P${winnerIndex} wins!`);
-             gameActive = false;
-             isPaused = true;
-             clearInterval(currentCardInterval);
-             clearTimeout(timeoutId);
-             clearTimeout(countdownSpeechTimeout);
-             const synth = getSpeechSynthesis();
-             if (synth) {
-                 synth.cancel();
-             }
-             const winnerName = players[winnerIndex];
-             const winBanner = document.getElementById('win-banner');
-             const winText = winBanner ? winBanner.querySelector('.win-text') : null;
-             if (winBanner && winText) {
-                 winText.innerHTML = `🎉 恭喜 ${winnerName} 獲得勝利！ 🎉<br><small>(點擊此處返回)</small>`;
-                 winBanner.style.display = 'flex';
-                 console.log("[WinCheck] Banner displayed.");
-             } else {
-                  console.error("Win banner missing!");
-             }
-             speakMessage(`恭喜 ${winnerName} 獲得勝利！`);
-             stopBGM();
-             return true;
-         }
-         return false;
+        let winnerIndex = -1;
+        for (const indexStr in scores) {
+            const index = parseInt(indexStr);
+            if (scores[index] >= winScore) {
+                if (winnerIndex === -1) {
+                    winnerIndex = index;
+                    break;
+                }
+            }
+        }
+        if (winnerIndex !== -1) {
+            console.log(`[WinCheck] P${winnerIndex} wins!`);
+            gameActive = false;
+            isPaused = true;
+            clearInterval(currentCardInterval);
+            clearTimeout(timeoutId);
+            clearTimeout(countdownSpeechTimeout);
+            const synth = getSpeechSynthesis();
+            if (synth) {
+                synth.cancel();
+            }
+            const winnerName = players[winnerIndex];
+            const winBanner = document.getElementById('win-banner');
+            const winText = winBanner ? winBanner.querySelector('.win-text') : null;
+            if (winBanner && winText) {
+                winText.innerHTML = `🎉 恭喜 ${winnerName} 獲得勝利！ 🎉<br><small>(點擊此處返回)</small>`;
+                winBanner.style.display = 'flex';
+                console.log("[WinCheck] Banner displayed.");
+            } else {
+                console.error("Win banner missing!");
+            }
+            speakMessage(`恭喜 ${winnerName} 獲得勝利！`);
+            stopBGM();
+            return true;
+        }
+        return false;
     }
 
     function pauseGame() {
-         if (!gameActive || isPaused) {
-             return;
-         }
-         console.log("--- Paused ---");
-         isPaused = true;
-         clearInterval(currentCardInterval);
-         clearTimeout(timeoutId);
-         clearTimeout(countdownSpeechTimeout);
-         const synth = getSpeechSynthesis();
-         if (synth) {
-             synth.cancel();
-         }
-         canSpeak = true;
-         pauseBGM();
-         const pauseOverlay = document.getElementById('pause-overlay');
-         if (pauseOverlay) {
-             pauseOverlay.style.display = 'flex';
-         }
+        if (!gameActive || isPaused) {
+            return;
+        }
+        console.log("--- Paused ---");
+        isPaused = true;
+        clearInterval(currentCardInterval);
+        clearTimeout(timeoutId);
+        clearTimeout(countdownSpeechTimeout);
+        const synth = getSpeechSynthesis();
+        if (synth) {
+            synth.cancel();
+        }
+        canSpeak = true;
+        pauseBGM();
+        const pauseOverlay = document.getElementById('pause-overlay');
+        if (pauseOverlay) {
+            pauseOverlay.style.display = 'flex';
+        }
     }
 
     function resumeGame() {
-         if (!isPaused || !gameActive) {
-             return;
-         }
-         console.log("--- Resumed ---");
-         const pauseOverlay = document.getElementById('pause-overlay');
-         if (pauseOverlay) {
-             pauseOverlay.style.display = 'none';
-         }
-         isPaused = false;
-         canSpeak = true;
-         if (gameActive) {
-             console.log("[ResumeGame] Resuming changes.");
-             setTimeout(() => {
-                 if (gameActive && !isPaused) {
-                     startCardChanges();
-                     playBGM();
-                 }
-             }, 500);
-         }
+        if (!isPaused || !gameActive) {
+            return;
+        }
+        console.log("--- Resumed ---");
+        const pauseOverlay = document.getElementById('pause-overlay');
+        if (pauseOverlay) {
+            pauseOverlay.style.display = 'none';
+        }
+        isPaused = false;
+        canSpeak = true;
+        if (gameActive) {
+            console.log("[ResumeGame] Resuming changes.");
+            setTimeout(() => {
+                if (gameActive && !isPaused) {
+                    startCardChanges();
+                    playBGM();
+                }
+            }, 500);
+        }
     }
 
     function restartGame() {
-        console.log("--- restartGame called (v3.5.4 Function Start) ---");
+        console.log("--- restartGame called (v3.5.5 Function Start) ---");
         let errorSource = "Unknown";
         try {
             errorSource = "State Reset";
@@ -808,7 +819,7 @@
                 }
                 playerElements = {};
             } catch (domError) {
-                 console.error("Non-critical error clearing buttons:", domError);
+                console.error("Non-critical error clearing buttons:", domError);
             }
 
             errorSource = "Overlay/Banner Hiding";
@@ -831,7 +842,7 @@
                 console.log("Stopping BGM...");
                 stopBGM();
             } catch (bgmError) {
-                 console.error("Non-critical error stopping BGM:", bgmError);
+                console.error("Non-critical error stopping BGM:", bgmError);
             }
 
             errorSource = "Page Switching";
